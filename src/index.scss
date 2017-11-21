@@ -1,0 +1,16 @@
+html, body {
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+.application {
+  margin-left: 2em;
+}
+
+.canvas-wrapper {
+  display: inline-block;
+  border: solid 1px black;
+}
