@@ -1,9 +1,12 @@
 import { injectable } from 'inversify';
+
 import { ImageLoader } from 'services/ImageLoader';
+import { LightSimulator } from 'services/LightSimulator';
 import { ShaderProgramInitializer } from 'services/ShaderProgramInitializer';
 import { TextureLoader } from 'services/TextureLoader';
 
 import { configuration } from 'configuration';
+import { Vector3 } from 'common/Vector3';
 
 // tslint:disable no-require-imports no-var-requires
 const vertexShaderSource: string = require('./shaders/vertex-shader.glsl');
@@ -16,6 +19,7 @@ export class Application {
   private readonly shaderProgramInitializer: ShaderProgramInitializer;
   private readonly textureLoader: TextureLoader;
   private readonly imageLoader: ImageLoader;
+  private readonly lightSimulator: LightSimulator;
 
   private shaderProgram: WebGLProgram;
 
@@ -34,12 +38,16 @@ export class Application {
     gl: WebGLRenderingContext,
     shaderProgramInitializer: ShaderProgramInitializer,
     textureLoader: TextureLoader,
-    imageLoader: ImageLoader
+    imageLoader: ImageLoader,
+    lightSimulator: LightSimulator
   ) {
     this.gl = gl;
     this.shaderProgramInitializer = shaderProgramInitializer;
     this.textureLoader = textureLoader;
     this.imageLoader = imageLoader;
+    this.lightSimulator = lightSimulator;
+
+    this.onLightPositionChange = this.onLightPositionChange.bind(this);
   }
 
   public async init() {
@@ -71,7 +79,44 @@ export class Application {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.normalMapTexture);
 
+    gl.uniform1f(this.uniformLocations.kD, configuration.kD);
+    gl.uniform1f(this.uniformLocations.kS, configuration.kS);
+    gl.uniform1f(this.uniformLocations.m, configuration.m);
+    const viewerVector = configuration.viewerVector;
+    gl.uniform3f(
+      this.uniformLocations.uViewerVector,
+      viewerVector.x,
+      viewerVector.y,
+      viewerVector.z
+    );
+
+    this.drawFrame();
+    this.startLightSimulator();
+  }
+
+  private drawFrame() {
+    const gl = this.gl;
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  private startLightSimulator() {
+    this.lightSimulator.init();
+    this.lightSimulator.addListener(
+      'light-position-change',
+      this.onLightPositionChange
+    );
+  }
+
+  private onLightPositionChange(lightPosition: Vector3) {
+    const gl = this.gl;
+
+    gl.uniform3f(
+      this.uniformLocations.lightPosition,
+      lightPosition.x,
+      lightPosition.y,
+      lightPosition.z
+    );
+    this.drawFrame();
   }
 
   private prepareRenderingPlaneBuffer() {
@@ -183,9 +228,7 @@ export class Application {
   private initializeNormalMapTexture() {
     const gl = this.gl;
 
-    this.normalMapTexture = this.textureLoader.loadTexture(
-      this.normalMapImage
-    );
+    this.normalMapTexture = this.textureLoader.loadTexture(this.normalMapImage);
 
     gl.uniform1i(this.uniformLocations.normalMapSampler, 1);
   }
@@ -213,7 +256,15 @@ export class Application {
       normalMapSampler: gl.getUniformLocation(
         this.shaderProgram,
         'uNormalMapSampler'
-      )
+      ),
+      lightPosition: gl.getUniformLocation(
+        this.shaderProgram,
+        'uLightPosition'
+      ),
+      uViewerVector: gl.getUniformLocation(this.shaderProgram, 'uViewerVector'),
+      kD: gl.getUniformLocation(this.shaderProgram, 'kD'),
+      kS: gl.getUniformLocation(this.shaderProgram, 'kS'),
+      m: gl.getUniformLocation(this.shaderProgram, 'm')
     };
   }
 }
