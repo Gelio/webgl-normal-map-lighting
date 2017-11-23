@@ -1,12 +1,13 @@
 import { injectable } from 'inversify';
 
+import { Vector3 } from 'common/Vector3';
+
 import { ImageLoader } from 'services/ImageLoader';
 import { LightSimulator } from 'services/LightSimulator';
 import { ShaderProgramInitializer } from 'services/ShaderProgramInitializer';
 import { TextureLoader } from 'services/TextureLoader';
 
 import { configuration } from 'configuration';
-import { Vector3 } from 'common/Vector3';
 
 // tslint:disable no-require-imports no-var-requires
 const vertexShaderSource: string = require('./shaders/vertex-shader.glsl');
