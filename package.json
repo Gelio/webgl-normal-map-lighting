@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@webcomponents/webcomponentsjs": "^1.0.19",
+    "eventemitter3": "^2.0.3",
     "inversify": "^4.5.1",
     "normalize.css": "^7.0.0",
     "reflect-metadata": "^0.1.10"
